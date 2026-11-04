@@ -1,15 +1,1305 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f2f1eb" />
-    <title>Field Image Overlay</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#e8ebe2">
+<title>Fieldnote · Geospatial overlay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Leaflet 1.9.4 stylesheet (inlined so no external CSS is needed) */
+/* required styles */
+
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-container,
+.leaflet-pane > svg,
+.leaflet-pane > canvas,
+.leaflet-zoom-box,
+.leaflet-image-layer,
+.leaflet-layer {
+	position: absolute;
+	left: 0;
+	top: 0;
+	}
+.leaflet-container {
+	overflow: hidden;
+	}
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+	-webkit-user-select: none;
+	   -moz-user-select: none;
+	        user-select: none;
+	  -webkit-user-drag: none;
+	}
+/* Prevents IE11 from highlighting tiles in blue */
+.leaflet-tile::selection {
+	background: transparent;
+}
+/* Safari renders non-retina tile on retina better with this, but Chrome is worse */
+.leaflet-safari .leaflet-tile {
+	image-rendering: -webkit-optimize-contrast;
+	}
+/* hack that prevents hw layers "stretching" when loading new tiles */
+.leaflet-safari .leaflet-tile-container {
+	width: 1600px;
+	height: 1600px;
+	-webkit-transform-origin: 0 0;
+	}
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+	display: block;
+	}
+/* .leaflet-container svg: reset svg max-width decleration shipped in Joomla! (joomla.org) 3.x */
+/* .leaflet-container img: map is broken in FF if you have max-width: 100% on tiles */
+.leaflet-container .leaflet-overlay-pane svg {
+	max-width: none !important;
+	max-height: none !important;
+	}
+.leaflet-container .leaflet-marker-pane img,
+.leaflet-container .leaflet-shadow-pane img,
+.leaflet-container .leaflet-tile-pane img,
+.leaflet-container img.leaflet-image-layer,
+.leaflet-container .leaflet-tile {
+	max-width: none !important;
+	max-height: none !important;
+	width: auto;
+	padding: 0;
+	}
+
+.leaflet-container img.leaflet-tile {
+	/* See: https://bugs.chromium.org/p/chromium/issues/detail?id=600120 */
+	mix-blend-mode: plus-lighter;
+}
+
+.leaflet-container.leaflet-touch-zoom {
+	-ms-touch-action: pan-x pan-y;
+	touch-action: pan-x pan-y;
+	}
+.leaflet-container.leaflet-touch-drag {
+	-ms-touch-action: pinch-zoom;
+	/* Fallback for FF which doesn't support pinch-zoom */
+	touch-action: none;
+	touch-action: pinch-zoom;
+}
+.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom {
+	-ms-touch-action: none;
+	touch-action: none;
+}
+.leaflet-container {
+	-webkit-tap-highlight-color: transparent;
+}
+.leaflet-container a {
+	-webkit-tap-highlight-color: rgba(51, 181, 229, 0.4);
+}
+.leaflet-tile {
+	filter: inherit;
+	visibility: hidden;
+	}
+.leaflet-tile-loaded {
+	visibility: inherit;
+	}
+.leaflet-zoom-box {
+	width: 0;
+	height: 0;
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	z-index: 800;
+	}
+/* workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=888319 */
+.leaflet-overlay-pane svg {
+	-moz-user-select: none;
+	}
+
+.leaflet-pane         { z-index: 400; }
+
+.leaflet-tile-pane    { z-index: 200; }
+.leaflet-overlay-pane { z-index: 400; }
+.leaflet-shadow-pane  { z-index: 500; }
+.leaflet-marker-pane  { z-index: 600; }
+.leaflet-tooltip-pane   { z-index: 650; }
+.leaflet-popup-pane   { z-index: 700; }
+
+.leaflet-map-pane canvas { z-index: 100; }
+.leaflet-map-pane svg    { z-index: 200; }
+
+.leaflet-vml-shape {
+	width: 1px;
+	height: 1px;
+	}
+.lvml {
+	behavior: url(#default#VML);
+	display: inline-block;
+	position: absolute;
+	}
+
+
+/* control positioning */
+
+.leaflet-control {
+	position: relative;
+	z-index: 800;
+	pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
+	pointer-events: auto;
+	}
+.leaflet-top,
+.leaflet-bottom {
+	position: absolute;
+	z-index: 1000;
+	pointer-events: none;
+	}
+.leaflet-top {
+	top: 0;
+	}
+.leaflet-right {
+	right: 0;
+	}
+.leaflet-bottom {
+	bottom: 0;
+	}
+.leaflet-left {
+	left: 0;
+	}
+.leaflet-control {
+	float: left;
+	clear: both;
+	}
+.leaflet-right .leaflet-control {
+	float: right;
+	}
+.leaflet-top .leaflet-control {
+	margin-top: 10px;
+	}
+.leaflet-bottom .leaflet-control {
+	margin-bottom: 10px;
+	}
+.leaflet-left .leaflet-control {
+	margin-left: 10px;
+	}
+.leaflet-right .leaflet-control {
+	margin-right: 10px;
+	}
+
+
+/* zoom and fade animations */
+
+.leaflet-fade-anim .leaflet-popup {
+	opacity: 0;
+	-webkit-transition: opacity 0.2s linear;
+	   -moz-transition: opacity 0.2s linear;
+	        transition: opacity 0.2s linear;
+	}
+.leaflet-fade-anim .leaflet-map-pane .leaflet-popup {
+	opacity: 1;
+	}
+.leaflet-zoom-animated {
+	-webkit-transform-origin: 0 0;
+	    -ms-transform-origin: 0 0;
+	        transform-origin: 0 0;
+	}
+svg.leaflet-zoom-animated {
+	will-change: transform;
+}
+
+.leaflet-zoom-anim .leaflet-zoom-animated {
+	-webkit-transition: -webkit-transform 0.25s cubic-bezier(0,0,0.25,1);
+	   -moz-transition:    -moz-transform 0.25s cubic-bezier(0,0,0.25,1);
+	        transition:         transform 0.25s cubic-bezier(0,0,0.25,1);
+	}
+.leaflet-zoom-anim .leaflet-tile,
+.leaflet-pan-anim .leaflet-tile {
+	-webkit-transition: none;
+	   -moz-transition: none;
+	        transition: none;
+	}
+
+.leaflet-zoom-anim .leaflet-zoom-hide {
+	visibility: hidden;
+	}
+
+
+/* cursors */
+
+.leaflet-interactive {
+	cursor: pointer;
+	}
+.leaflet-grab {
+	cursor: -webkit-grab;
+	cursor:    -moz-grab;
+	cursor:         grab;
+	}
+.leaflet-crosshair,
+.leaflet-crosshair .leaflet-interactive {
+	cursor: crosshair;
+	}
+.leaflet-popup-pane,
+.leaflet-control {
+	cursor: auto;
+	}
+.leaflet-dragging .leaflet-grab,
+.leaflet-dragging .leaflet-grab .leaflet-interactive,
+.leaflet-dragging .leaflet-marker-draggable {
+	cursor: move;
+	cursor: -webkit-grabbing;
+	cursor:    -moz-grabbing;
+	cursor:         grabbing;
+	}
+
+/* marker & overlays interactivity */
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-image-layer,
+.leaflet-pane > svg path,
+.leaflet-tile-container {
+	pointer-events: none;
+	}
+
+.leaflet-marker-icon.leaflet-interactive,
+.leaflet-image-layer.leaflet-interactive,
+.leaflet-pane > svg path.leaflet-interactive,
+svg.leaflet-image-layer.leaflet-interactive path {
+	pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
+	pointer-events: auto;
+	}
+
+/* visual tweaks */
+
+.leaflet-container {
+	background: #ddd;
+	outline-offset: 1px;
+	}
+.leaflet-container a {
+	color: #0078A8;
+	}
+.leaflet-zoom-box {
+	border: 2px dotted #38f;
+	background: rgba(255,255,255,0.5);
+	}
+
+
+/* general typography */
+.leaflet-container {
+	font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	font-size: 0.75rem;
+	line-height: 1.5;
+	}
+
+
+/* general toolbar styles */
+
+.leaflet-bar {
+	box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+	border-radius: 4px;
+	}
+.leaflet-bar a {
+	background-color: #fff;
+	border-bottom: 1px solid #ccc;
+	width: 26px;
+	height: 26px;
+	line-height: 26px;
+	display: block;
+	text-align: center;
+	text-decoration: none;
+	color: black;
+	}
+.leaflet-bar a,
+.leaflet-control-layers-toggle {
+	background-position: 50% 50%;
+	background-repeat: no-repeat;
+	display: block;
+	}
+.leaflet-bar a:hover,
+.leaflet-bar a:focus {
+	background-color: #f4f4f4;
+	}
+.leaflet-bar a:first-child {
+	border-top-left-radius: 4px;
+	border-top-right-radius: 4px;
+	}
+.leaflet-bar a:last-child {
+	border-bottom-left-radius: 4px;
+	border-bottom-right-radius: 4px;
+	border-bottom: none;
+	}
+.leaflet-bar a.leaflet-disabled {
+	cursor: default;
+	background-color: #f4f4f4;
+	color: #bbb;
+	}
+
+.leaflet-touch .leaflet-bar a {
+	width: 30px;
+	height: 30px;
+	line-height: 30px;
+	}
+.leaflet-touch .leaflet-bar a:first-child {
+	border-top-left-radius: 2px;
+	border-top-right-radius: 2px;
+	}
+.leaflet-touch .leaflet-bar a:last-child {
+	border-bottom-left-radius: 2px;
+	border-bottom-right-radius: 2px;
+	}
+
+/* zoom control */
+
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+	font: bold 18px 'Lucida Console', Monaco, monospace;
+	text-indent: 1px;
+	}
+
+.leaflet-touch .leaflet-control-zoom-in, .leaflet-touch .leaflet-control-zoom-out  {
+	font-size: 22px;
+	}
+
+
+/* layers control */
+
+.leaflet-control-layers {
+	box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+	background: #fff;
+	border-radius: 5px;
+	}
+.leaflet-control-layers-toggle {
+	background-image: url(images/layers.png);
+	width: 36px;
+	height: 36px;
+	}
+.leaflet-retina .leaflet-control-layers-toggle {
+	background-image: url(images/layers-2x.png);
+	background-size: 26px 26px;
+	}
+.leaflet-touch .leaflet-control-layers-toggle {
+	width: 44px;
+	height: 44px;
+	}
+.leaflet-control-layers .leaflet-control-layers-list,
+.leaflet-control-layers-expanded .leaflet-control-layers-toggle {
+	display: none;
+	}
+.leaflet-control-layers-expanded .leaflet-control-layers-list {
+	display: block;
+	position: relative;
+	}
+.leaflet-control-layers-expanded {
+	padding: 6px 10px 6px 6px;
+	color: #333;
+	background: #fff;
+	}
+.leaflet-control-layers-scrollbar {
+	overflow-y: scroll;
+	overflow-x: hidden;
+	padding-right: 5px;
+	}
+.leaflet-control-layers-selector {
+	margin-top: 2px;
+	position: relative;
+	top: 1px;
+	}
+.leaflet-control-layers label {
+	display: block;
+	font-size: 13px;
+	font-size: 1.08333em;
+	}
+.leaflet-control-layers-separator {
+	height: 0;
+	border-top: 1px solid #ddd;
+	margin: 5px -10px 5px -6px;
+	}
+
+/* Default icon URLs */
+.leaflet-default-icon-path { /* used only in path-guessing heuristic, see L.Icon.Default */
+	background-image: url(images/marker-icon.png);
+	}
+
+
+/* attribution and scale controls */
+
+.leaflet-container .leaflet-control-attribution {
+	background: #fff;
+	background: rgba(255, 255, 255, 0.8);
+	margin: 0;
+	}
+.leaflet-control-attribution,
+.leaflet-control-scale-line {
+	padding: 0 5px;
+	color: #333;
+	line-height: 1.4;
+	}
+.leaflet-control-attribution a {
+	text-decoration: none;
+	}
+.leaflet-control-attribution a:hover,
+.leaflet-control-attribution a:focus {
+	text-decoration: underline;
+	}
+.leaflet-attribution-flag {
+	display: inline !important;
+	vertical-align: baseline !important;
+	width: 1em;
+	height: 0.6669em;
+	}
+.leaflet-left .leaflet-control-scale {
+	margin-left: 5px;
+	}
+.leaflet-bottom .leaflet-control-scale {
+	margin-bottom: 5px;
+	}
+.leaflet-control-scale-line {
+	border: 2px solid #777;
+	border-top: none;
+	line-height: 1.1;
+	padding: 2px 5px 1px;
+	white-space: nowrap;
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	background: rgba(255, 255, 255, 0.8);
+	text-shadow: 1px 1px #fff;
+	}
+.leaflet-control-scale-line:not(:first-child) {
+	border-top: 2px solid #777;
+	border-bottom: none;
+	margin-top: -2px;
+	}
+.leaflet-control-scale-line:not(:first-child):not(:last-child) {
+	border-bottom: 2px solid #777;
+	}
+
+.leaflet-touch .leaflet-control-attribution,
+.leaflet-touch .leaflet-control-layers,
+.leaflet-touch .leaflet-bar {
+	box-shadow: none;
+	}
+.leaflet-touch .leaflet-control-layers,
+.leaflet-touch .leaflet-bar {
+	border: 2px solid rgba(0,0,0,0.2);
+	background-clip: padding-box;
+	}
+
+
+/* popup */
+
+.leaflet-popup {
+	position: absolute;
+	text-align: center;
+	margin-bottom: 20px;
+	}
+.leaflet-popup-content-wrapper {
+	padding: 1px;
+	text-align: left;
+	border-radius: 12px;
+	}
+.leaflet-popup-content {
+	margin: 13px 24px 13px 20px;
+	line-height: 1.3;
+	font-size: 13px;
+	font-size: 1.08333em;
+	min-height: 1px;
+	}
+.leaflet-popup-content p {
+	margin: 17px 0;
+	margin: 1.3em 0;
+	}
+.leaflet-popup-tip-container {
+	width: 40px;
+	height: 20px;
+	position: absolute;
+	left: 50%;
+	margin-top: -1px;
+	margin-left: -20px;
+	overflow: hidden;
+	pointer-events: none;
+	}
+.leaflet-popup-tip {
+	width: 17px;
+	height: 17px;
+	padding: 1px;
+
+	margin: -10px auto 0;
+	pointer-events: auto;
+
+	-webkit-transform: rotate(45deg);
+	   -moz-transform: rotate(45deg);
+	    -ms-transform: rotate(45deg);
+	        transform: rotate(45deg);
+	}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+	background: white;
+	color: #333;
+	box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+	}
+.leaflet-container a.leaflet-popup-close-button {
+	position: absolute;
+	top: 0;
+	right: 0;
+	border: none;
+	text-align: center;
+	width: 24px;
+	height: 24px;
+	font: 16px/24px Tahoma, Verdana, sans-serif;
+	color: #757575;
+	text-decoration: none;
+	background: transparent;
+	}
+.leaflet-container a.leaflet-popup-close-button:hover,
+.leaflet-container a.leaflet-popup-close-button:focus {
+	color: #585858;
+	}
+.leaflet-popup-scrolled {
+	overflow: auto;
+	}
+
+.leaflet-oldie .leaflet-popup-content-wrapper {
+	-ms-zoom: 1;
+	}
+.leaflet-oldie .leaflet-popup-tip {
+	width: 24px;
+	margin: 0 auto;
+
+	-ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678)";
+	filter: progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678);
+	}
+
+.leaflet-oldie .leaflet-control-zoom,
+.leaflet-oldie .leaflet-control-layers,
+.leaflet-oldie .leaflet-popup-content-wrapper,
+.leaflet-oldie .leaflet-popup-tip {
+	border: 1px solid #999;
+	}
+
+
+/* div icon */
+
+.leaflet-div-icon {
+	background: #fff;
+	border: 1px solid #666;
+	}
+
+
+/* Tooltip */
+/* Base styles for the element that has a tooltip */
+.leaflet-tooltip {
+	position: absolute;
+	padding: 6px;
+	background-color: #fff;
+	border: 1px solid #fff;
+	border-radius: 3px;
+	color: #222;
+	white-space: nowrap;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	pointer-events: none;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+	}
+.leaflet-tooltip.leaflet-interactive {
+	cursor: pointer;
+	pointer-events: auto;
+	}
+.leaflet-tooltip-top:before,
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+	position: absolute;
+	pointer-events: none;
+	border: 6px solid transparent;
+	background: transparent;
+	content: "";
+	}
+
+/* Directions */
+
+.leaflet-tooltip-bottom {
+	margin-top: 6px;
+}
+.leaflet-tooltip-top {
+	margin-top: -6px;
+}
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-top:before {
+	left: 50%;
+	margin-left: -6px;
+	}
+.leaflet-tooltip-top:before {
+	bottom: 0;
+	margin-bottom: -12px;
+	border-top-color: #fff;
+	}
+.leaflet-tooltip-bottom:before {
+	top: 0;
+	margin-top: -12px;
+	margin-left: -6px;
+	border-bottom-color: #fff;
+	}
+.leaflet-tooltip-left {
+	margin-left: -6px;
+}
+.leaflet-tooltip-right {
+	margin-left: 6px;
+}
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+	top: 50%;
+	margin-top: -6px;
+	}
+.leaflet-tooltip-left:before {
+	right: 0;
+	margin-right: -12px;
+	border-left-color: #fff;
+	}
+.leaflet-tooltip-right:before {
+	left: 0;
+	margin-left: -12px;
+	border-right-color: #fff;
+	}
+
+/* Printing */
+
+@media print {
+	/* Prevent printers from removing background-images of controls. */
+	.leaflet-control {
+		-webkit-print-color-adjust: exact;
+		print-color-adjust: exact;
+		}
+	}
+
+</style>
+<style>
+:root{
+  --page:#e8ebe2; --panel:#f9f9f4; --card:#ffffff; --ink:#1c2620; --muted:#6a746b; --line:#dfe2d6;
+  --accent:#2c6b4a; --lime:#cfeb8f; --lime-ink:#2f5a1f; --chip:#eceee3; --danger:#a4472f;
+  --sans:"Manrope",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;font:14px/1.5 var(--sans);color:var(--ink);background:var(--page);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:316px 1fr;gap:10px;height:100%;padding:10px;transition:grid-template-columns .25s ease}
+.app.collapsed{grid-template-columns:0 1fr;gap:0}
+.app.collapsed aside{visibility:hidden;border-width:0;opacity:0}
+
+/* ---- sidebar ---- */
+aside{display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:18px;transition:opacity .2s}
+.scroll{flex:1;min-height:0;overflow:auto;padding:14px 18px 8px}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{flex:none;width:38px;height:38px;display:grid;place-items:center;border-radius:11px;background:var(--lime);color:var(--lime-ink)}
+.logo svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.brand-text{flex:1;min-width:0;line-height:1.15}
+.brand-text b{display:block;font-size:13px;font-weight:800;letter-spacing:.2px}
+.brand-text span{font:500 10px var(--mono);letter-spacing:.6px;color:var(--muted);text-transform:uppercase}
+.chip{flex:none;padding:4px 9px;border-radius:8px;background:var(--chip);font:500 10.5px var(--mono);letter-spacing:.6px;color:var(--muted)}
+.eyebrow{margin:26px 0 0;font:500 10px var(--mono);letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+h1{margin:6px 0 0;font-size:30px;line-height:1.1;font-weight:800;letter-spacing:-.8px}
+.lede{margin:8px 0 0;color:var(--muted);font-size:13px;max-width:34ch}
+
+.sec{margin-top:22px;padding-top:16px;border-top:1px solid var(--line)}
+.sec-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.sec-head h2{margin:0;font-size:14px;font-weight:800;letter-spacing:-.1px}
+.num{flex:none;display:grid;place-items:center;min-width:24px;height:22px;padding:0 6px;border-radius:999px;background:var(--chip);font:500 10px var(--mono);color:var(--muted)}
+
+.drop{display:flex;flex-direction:column;align-items:center;gap:4px;padding:22px 14px 18px;text-align:center;border:1.5px dashed #c3c8b6;border-radius:14px;background:#f4f5ec;cursor:pointer;transition:border-color .15s,background .15s}
+.drop:hover,.drop:focus-within,body.dragging .drop{border-color:var(--accent);background:#ecf2e0}
+.drop input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.drop-icon{width:38px;height:38px;display:grid;place-items:center;border-radius:50%;background:#dfeccb;color:var(--lime-ink);margin-bottom:8px}
+.drop-icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.drop b{font-size:13px;font-weight:700}
+.drop .or{font-size:12px;color:var(--muted)}
+.drop .or u{color:var(--accent);font-weight:700;text-decoration:none}
+.drop .fmt{margin-top:12px;font:500 9.5px var(--mono);letter-spacing:.6px;color:#868f84;text-transform:uppercase}
+
+.field{display:grid;gap:6px;margin-top:14px}
+.field label{font-size:12px;font-weight:600;color:var(--muted)}
+select,input[type=text]{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;font-size:13px}
+.note{margin:8px 0 0;font-size:11.5px;line-height:1.5;color:var(--muted)}
+
+#layers{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+#layers:empty::before{content:"Layers you open appear here, newest on top.";display:block;font-size:12px;color:var(--muted)}
+.layer{padding:10px 11px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.layer.off{opacity:.55}
+.layer .row{display:flex;align-items:center;gap:6px}
+.badge{flex:none;padding:2px 7px;border-radius:6px;background:#dfeccb;color:var(--lime-ink);font:600 10px var(--mono);letter-spacing:.5px}
+.name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;font-size:13px}
+.ib{flex:none;width:28px;height:28px;display:grid;place-items:center;border:0;border-radius:8px;background:none;color:var(--ink);cursor:pointer}
+.ib:hover{background:var(--chip)}.ib.del:hover{color:var(--danger)}
+.ib svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.layer input[type=range]{width:100%;margin:8px 0 0;accent-color:var(--accent)}
+.meta{margin:3px 0 0;color:var(--muted);font:500 11px var(--mono)}
+
+.status{display:flex;align-items:center;gap:10px;margin:8px 14px 0;padding:11px 14px;border-radius:12px;background:var(--chip)}
+.status i{flex:none;width:8px;height:8px;border-radius:50%;background:#b3b9a8}
+.status.live i{background:var(--accent);box-shadow:0 0 0 4px rgba(44,107,74,.15)}
+.status b{display:block;font-size:12.5px;font-weight:700;line-height:1.3}
+.status span{display:block;font-size:11.5px;color:var(--muted);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.status div{min-width:0}
+.foot{display:flex;justify-content:space-between;gap:8px;padding:10px 20px 12px;font:500 9.5px var(--mono);letter-spacing:.5px;color:#8a9288;text-transform:uppercase}
+
+/* ---- map ---- */
+.mapwrap{position:relative;min-height:0;min-width:0;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:#dfe5dc}
+#map{position:absolute;inset:0}
+.toolbar{position:absolute;z-index:500;top:12px;left:12px;right:12px;display:flex;align-items:center;gap:12px;padding:7px 8px 7px 10px;border-radius:14px;background:rgba(250,250,245,.94);border:1px solid var(--line);box-shadow:0 6px 24px rgba(28,38,32,.1);backdrop-filter:blur(8px)}
+.tbtn{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 10px;border:0;border-radius:9px;background:none;cursor:pointer;color:var(--ink);font-size:12.5px;font-weight:700}
+.tbtn:hover:not(:disabled){background:var(--chip)}
+.tbtn:disabled{opacity:.4;cursor:default}
+.tbtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#sideToggle{width:32px;padding:0;justify-content:center}
+.tlabel{display:flex;align-items:center;gap:8px;font:500 10.5px var(--mono);letter-spacing:.6px;color:var(--muted);text-transform:uppercase;white-space:nowrap}
+.tlabel i{width:7px;height:7px;border-radius:50%;background:#b3b9a8}
+.spacer{flex:1}
+.seg{display:flex;padding:3px;gap:2px;border-radius:11px;background:var(--chip);border:1px solid var(--line)}
+.seg button{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border:0;border-radius:8px;background:none;color:var(--muted);font-size:12.5px;font-weight:700;cursor:pointer}
+.seg button svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(28,38,32,.14)}
+#crsTag{max-width:210px;overflow:hidden;text-overflow:ellipsis}
+
+#empty{position:absolute;z-index:450;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:12px;padding:10px 16px 10px 10px;border-radius:12px;background:rgba(250,250,245,.96);border:1px solid var(--line);box-shadow:0 6px 24px rgba(28,38,32,.12);font-size:12.5px;font-weight:600;pointer-events:none}
+#empty .logo{width:34px;height:34px;border-radius:9px;background:#dfeccb}
+#empty .logo svg{width:18px;height:18px}
+
+#coords{position:absolute;left:14px;bottom:44px;z-index:500;padding:4px 9px;border-radius:8px;background:rgba(250,250,245,.94);border:1px solid var(--line);font:500 11px var(--mono);color:var(--ink)}
+#toast{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:600;max-width:min(560px,92%);padding:10px 16px;border-radius:12px;background:var(--ink);color:#fff;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);display:none}
+#toast.error{background:var(--danger)}#toast.ok{background:var(--accent)}
+.dxf-text{white-space:nowrap;font-size:11px;color:#1b1b1b;text-shadow:0 0 2px #fff,0 0 2px #fff,0 0 3px #fff}
+
+/* leaflet controls in the same language */
+.leaflet-bar{border:1px solid var(--line)!important;border-radius:12px!important;overflow:hidden;box-shadow:0 4px 16px rgba(28,38,32,.12)!important;background:var(--card)}
+.leaflet-bar a{width:36px!important;height:36px!important;line-height:36px!important;font:600 18px var(--sans)!important;color:var(--ink)!important;border-bottom:1px solid var(--line)!important}
+.leaflet-bar a:last-child{border-bottom:0!important}
+.leaflet-bar a:hover{background:var(--chip)!important}
+.leaflet-control-scale-line{font:500 10px var(--mono);border-color:#59635b;background:rgba(250,250,245,.8)}
+.leaflet-control-attribution{font-size:10px;background:rgba(250,250,245,.85)!important;border-radius:6px 0 0 0}
+
+@media(max-width:820px){
+  .app{grid-template-columns:1fr;grid-template-rows:1fr minmax(0,52vh)}
+  .app.collapsed{grid-template-columns:1fr;grid-template-rows:1fr 0}
+  aside{order:2}
+  h1{font-size:24px}.eyebrow{margin-top:16px}
+  .tlabel,#crsTag{display:none}
+  .foot{display:none}
+}
+@media(prefers-reduced-motion:reduce){.app,aside{transition:none}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+ <aside id="side">
+  <div class="scroll">
+   <div class="brand">
+    <div class="logo"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></div>
+    <div class="brand-text"><b>FIELDNOTE</b><span>Image register</span></div>
+    <span class="chip">MAP 01</span>
+   </div>
+
+   <p class="eyebrow">Geospatial workspace</p>
+   <h1>Geospatial overlay</h1>
+   <p class="lede">Open a GeoTIFF or convert a DXF drawing for the map.</p>
+
+   <section class="sec">
+    <div class="sec-head"><h2>Geospatial file</h2><span class="num">01</span></div>
+    <label class="drop">
+     <input id="file" type="file" multiple accept=".tif,.tiff,.dxf,.png,.jpg,.jpeg,.gif,.bmp,.pgw,.pngw,.jgw,.jpgw,.jpegw,.gfw,.gifw,.bpw,.bmpw,.wld,.pdf">
+     <span class="drop-icon"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg></span>
+     <b>Drop a geospatial file here</b>
+     <span class="or">or <u>browse files ↗</u></span>
+     <span class="fmt">DXF · GeoTIFF · PNG · JPG · GIF · BMP</span>
+    </label>
+    <div class="field">
+     <label for="crs">DXF coordinate system</label>
+     <select id="crs">
+      <option value="26331">EPSG:26331 - Minna / UTM zone 31N</option>
+      <option value="26332">EPSG:26332 - Minna / UTM zone 32N</option>
+      <option value="26391">EPSG:26391 - Minna / Nigeria West Belt</option>
+      <option value="26392">EPSG:26392 - Minna / Nigeria Mid Belt</option>
+      <option value="26393">EPSG:26393 - Minna / Nigeria East Belt</option>
+      <option value="32631">EPSG:32631 - WGS 84 / UTM zone 31N</option>
+      <option value="32632">EPSG:32632 - WGS 84 / UTM zone 32N</option>
+      <option value="4326">EPSG:4326 - WGS 84 (lon/lat)</option>
+      <option value="custom">Other (UTM EPSG code or proj4 string)...</option>
+     </select>
+     <input id="crsCustom" type="text" placeholder="EPSG code (e.g. 32633) or +proj=... string" hidden>
+    </div>
+    <p class="note">GeoTIFF metadata is read automatically. Images need a WGS 84 world file. GeoPDF is not supported: convert it to GeoTIFF first.</p>
+   </section>
+
+   <section class="sec">
+    <div class="sec-head"><h2>Layers</h2><span class="num">02</span></div>
+    <ul id="layers"></ul>
+   </section>
+  </div>
+
+  <div class="status" id="status"><i></i><div><b>Waiting for a raster</b><span>Import a georeferenced GeoTIFF</span></div></div>
+  <div class="foot"><span>Fieldnote / 2026</span><span>Runs in your browser</span></div>
+ </aside>
+
+ <main class="mapwrap">
+  <div id="map"></div>
+  <div class="toolbar">
+   <button class="tbtn" id="sideToggle" title="Hide or show the side panel" aria-label="Hide or show the side panel" aria-expanded="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg></button>
+   <span class="tlabel"><i></i>Basemap view</span>
+   <span class="spacer"></span>
+   <div class="seg" id="bases">
+    <button data-base="osm" class="on"><svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></svg>Streets</button>
+    <button data-base="sat"><svg viewBox="0 0 24 24"><path d="M4 20 20 4M7 12l5 5M12 7l5 5M3 8l3-3 3 3-3 3zM15 16l3-3 3 3-3 3z"/></svg>Satellite</button>
+   </div>
+   <span class="tlabel" id="crsTag">DXF · EPSG:26331</span>
+   <button class="tbtn" id="fitAll" disabled><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>Fit bounds</button>
+  </div>
+  <div id="empty"><span class="logo"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></span>Waiting for georeferenced raster</div>
+  <div id="coords">-</div>
+  <div id="toast"></div>
+ </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/proj4@2.22.0/dist/proj4.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dxf-parser@1.1.2/dist/dxf-parser.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/georaster@1.6.0/dist/georaster.browser.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/georaster-layer-for-leaflet@4.1.2/dist/v3/webpack/bundle/georaster-layer-for-leaflet.min.js"></script>
+<script>
+/* ===== DXF -> GeoJSON (runs in the browser) ===== */
+const MINNA = '+a=6378249.145 +rf=293.465 +towgs84=-92,-93,122,0,0,0,0 +units=m +no_defs';
+const CRS_DEFS = {
+  '26331': '+proj=utm +zone=31 ' + MINNA,
+  '26332': '+proj=utm +zone=32 ' + MINNA,
+  '26391': '+proj=tmerc +lat_0=4 +lon_0=4.5 +k=0.99975 +x_0=230738.26 +y_0=0 ' + MINNA,
+  '26392': '+proj=tmerc +lat_0=4 +lon_0=8.5 +k=0.99975 +x_0=670553.98 +y_0=0 ' + MINNA,
+  '26393': '+proj=tmerc +lat_0=4 +lon_0=12.5 +k=0.99975 +x_0=1110369.7 +y_0=0 ' + MINNA
+};
+const MAX_FEATURES = 100000, MAX_INSERT_DEPTH = 8, FLATTEN = 0.25;
+
+function makeProjector(input) {
+  const s = String(input || '').trim();
+  let def = null, code = s.replace(/^epsg:/i, '');
+  if (/^\+proj/.test(s)) def = s;
+  else if (code === '4326') return (x, y) => checkLonLat(x, y);
+  else if (CRS_DEFS[code]) def = CRS_DEFS[code];
+  else if (/^326(0[1-9]|[1-5]\d|60)$/.test(code)) def = '+proj=utm +zone=' + Number(code.slice(3)) + ' +datum=WGS84 +units=m +no_defs';
+  else if (/^327(0[1-9]|[1-5]\d|60)$/.test(code)) def = '+proj=utm +zone=' + Number(code.slice(3)) + ' +south +datum=WGS84 +units=m +no_defs';
+  else throw new Error('EPSG:' + code + ' is not built in. Choose it from the list, or paste a proj4 string starting with +proj= instead.');
+  const t = proj4(def, 'EPSG:4326');
+  return (x, y) => { const r = t.forward([x, y]); return checkLonLat(r[0], r[1]); };
+}
+function checkLonLat(lon, lat) {
+  if (!Number.isFinite(lon) || !Number.isFinite(lat) || lon < -180 || lon > 180 || lat < -90 || lat > 90) throw new Error('coordinate-range');
+  return [lon, lat];
+}
+
+function sampleCount(sweep, r) {
+  if (!(r > 0)) return 8;
+  const d = r > FLATTEN ? 2 * Math.acos(1 - FLATTEN / r) : Math.PI / 4;
+  return Math.min(1000, Math.max(4, Math.ceil(Math.abs(sweep) / d)));
+}
+function arcPts(cx, cy, r, a0, sweep, sc) {
+  const n = sampleCount(sweep, r * sc), out = [];
+  for (let i = 0; i <= n; i++) { const a = a0 + sweep * i / n; out.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); }
+  return out;
+}
+function bulgeInterior(p1, p2, b, sc) {
+  if (!b || !Number.isFinite(b)) return [];
+  const th = 4 * Math.atan(b), dx = p2.x - p1.x, dy = p2.y - p1.y, c = Math.hypot(dx, dy);
+  if (c === 0) return [];
+  const h = (c / 2) / Math.tan(th / 2);
+  const cx = (p1.x + p2.x) / 2 - dy / c * h, cy = (p1.y + p2.y) / 2 + dx / c * h;
+  const r = Math.hypot(p1.x - cx, p1.y - cy), a0 = Math.atan2(p1.y - cy, p1.x - cx);
+  const n = sampleCount(th, r * sc), out = [];
+  for (let i = 1; i < n; i++) { const a = a0 + th * i / n; out.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); }
+  return out;
+}
+function polyPts(vs, closed, sc) {
+  const pts = [], n = vs.length;
+  for (let i = 0; i < n; i++) {
+    const v = vs[i];
+    pts.push([v.x, v.y]);
+    const nxt = i < n - 1 ? vs[i + 1] : (closed ? vs[0] : null);
+    if (nxt && v.bulge) pts.push(...bulgeInterior(v, nxt, v.bulge, sc));
+  }
+  return pts;
+}
+function bspline(deg, knots, ctrl) {
+  const n = ctrl.length, out = [], lo = knots[deg], hi = knots[n], steps = Math.min(2000, n * 16);
+  for (let s = 0; s <= steps; s++) {
+    const t = s === steps ? hi - 1e-9 * (hi - lo) : lo + (hi - lo) * s / steps;
+    let k = deg; while (k < n - 1 && t >= knots[k + 1]) k++;
+    const d = []; for (let j = 0; j <= deg; j++) d.push([ctrl[j + k - deg].x, ctrl[j + k - deg].y]);
+    for (let r = 1; r <= deg; r++) for (let j = deg; j >= r; j--) {
+      const den = knots[j + 1 + k - r] - knots[j + k - deg], a = den === 0 ? 0 : (t - knots[j + k - deg]) / den;
+      d[j] = [(1 - a) * d[j - 1][0] + a * d[j][0], (1 - a) * d[j - 1][1] + a * d[j][1]];
+    }
+    out.push(d[deg]);
+  }
+  return out;
+}
+function cleanMText(t) {
+  return String(t || '').replace(/\\P/gi, '\n').replace(/\\[A-Za-z][^;\\]*;/g, '').replace(/\\([\\{}])/g, '$1').replace(/[{}]/g, '').trim();
+}
+
+/* returns {kind:'point'|'line'|'polygon', pts:[[x,y],...], text?} in local coordinates, or null if unsupported */
+function entityShape(e, sc) {
+  switch (e.type) {
+    case 'LINE': return {kind: 'line', pts: e.vertices.map(v => [v.x, v.y])};
+    case 'LWPOLYLINE':
+    case 'POLYLINE': {
+      if (e.isPolyfaceMesh || e.is3dPolygonMesh) return null;
+      const closed = !!e.shape, pts = polyPts(e.vertices || [], closed, sc);
+      if (pts.length < 2) return null;
+      if (closed && pts.length >= 3) { pts.push(pts[0].slice()); return {kind: 'polygon', pts}; }
+      return {kind: 'line', pts};
+    }
+    case 'CIRCLE': return {kind: 'polygon', pts: arcPts(e.center.x, e.center.y, e.radius, 0, 2 * Math.PI, sc)};
+    case 'ARC': {
+      let sw = e.endAngle - e.startAngle; if (sw <= 0) sw += 2 * Math.PI;
+      return {kind: 'line', pts: arcPts(e.center.x, e.center.y, e.radius, e.startAngle, sw, sc)};
+    }
+    case 'ELLIPSE': {
+      const mx = e.majorAxisEndPoint.x, my = e.majorAxisEndPoint.y, ra = e.axisRatio, a0 = e.startAngle || 0;
+      let sw = (e.endAngle === undefined ? 2 * Math.PI : e.endAngle) - a0; if (sw <= 0) sw += 2 * Math.PI;
+      const n = sampleCount(sw, Math.hypot(mx, my) * sc), pts = [];
+      for (let i = 0; i <= n; i++) { const t = a0 + sw * i / n; pts.push([e.center.x + Math.cos(t) * mx - Math.sin(t) * ra * my, e.center.y + Math.cos(t) * my + Math.sin(t) * ra * mx]); }
+      const full = Math.abs(sw - 2 * Math.PI) < 1e-9;
+      return {kind: full ? 'polygon' : 'line', pts};
+    }
+    case 'SPLINE': {
+      let pts = null;
+      const cp = e.controlPoints || [], kn = e.knotValues || [], deg = e.degreeOfSplineCurve || 3;
+      if (cp.length > deg && kn.length === cp.length + deg + 1) { try { pts = bspline(deg, kn, cp); } catch (_) { pts = null; } }
+      if (!pts && e.fitPoints && e.fitPoints.length > 1) pts = e.fitPoints.map(v => [v.x, v.y]);
+      if (!pts && cp.length > 1) pts = cp.map(v => [v.x, v.y]);
+      return pts && pts.length > 1 ? {kind: 'line', pts} : null;
+    }
+    case 'POINT': return {kind: 'point', pts: [[e.position.x, e.position.y]]};
+    case 'TEXT': return {kind: 'point', pts: [[e.startPoint.x, e.startPoint.y]], text: String(e.text || '')};
+    case 'MTEXT': return {kind: 'point', pts: [[e.position.x, e.position.y]], text: cleanMText(e.text)};
+    default: return null;
+  }
+}
+
+function convertDxfText(text, crsInput) {
+  const Parser = window.DxfParser && (window.DxfParser.default || window.DxfParser);
+  let dxf;
+  try { dxf = new Parser().parseSync(text); } catch (err) { throw new Error('could not read this DXF (' + err.message + ').'); }
+  if (!dxf) throw new Error('this does not look like a valid DXF file.');
+  const project = makeProjector(crsInput);
+  const blocks = dxf.blocks || {}, features = [], skipped = {};
+  let failures = 0;
+  const skip = t => { skipped[t] = (skipped[t] || 0) + 1; };
+
+  function walk(entities, tf, sc, depth) {
+    for (const e of entities || []) {
+      if (e.type === 'INSERT') {
+        const b = blocks[e.name];
+        if (!b || depth >= MAX_INSERT_DEPTH || String(e.name).startsWith('*')) { skip('INSERT'); continue; }
+        const base = b.position || {x: 0, y: 0}, xs = e.xScale ?? 1, ys = e.yScale ?? 1;
+        const rot = (e.rotation || 0) * Math.PI / 180, cr = Math.cos(rot), sr = Math.sin(rot), pos = e.position;
+        const local = p => {
+          const x = (p[0] - base.x) * xs, y = (p[1] - base.y) * ys;
+          return tf([pos.x + x * cr - y * sr, pos.y + x * sr + y * cr]);
+        };
+        walk(b.entities, local, sc * Math.max(Math.abs(xs), Math.abs(ys)), depth + 1);
+        continue;
+      }
+      let shape;
+      try { shape = entityShape(e, sc); } catch (_) { shape = null; }
+      if (!shape) { skip(e.type); continue; }
+      try {
+        const c = shape.pts.map(p => project(...tf(p)));
+        const geometry = shape.kind === 'point' ? {type: 'Point', coordinates: c[0]}
+          : shape.kind === 'polygon' ? {type: 'Polygon', coordinates: [c]} : {type: 'LineString', coordinates: c};
+        const properties = {layer: String(e.layer || '0'), entity_type: e.type};
+        if (e.handle) properties.handle = String(e.handle);
+        if (shape.text !== undefined) properties.text = shape.text;
+        features.push({type: 'Feature', geometry, properties});
+        if (features.length > MAX_FEATURES) throw new Error('the drawing exceeds the ' + MAX_FEATURES.toLocaleString('en-US') + ' feature limit.');
+      } catch (err) {
+        if (/feature limit/.test(err.message)) throw err;
+        failures++; skip(e.type);
+      }
+    }
+  }
+  walk(dxf.entities, p => p, 1, 0);
+
+  if (!features.length) throw new Error('no supported vector entities were found in the DXF modelspace.' + (failures ? ' Coordinates could not be placed on Earth: the drawing is probably not in the selected coordinate system.' : ''));
+  return {type: 'FeatureCollection', skipped: Object.values(skipped).reduce((a, b) => a + b, 0), skipped_by_type: skipped, features};
+}
+/* ===== end DXF conversion ===== */
+</script>
+<script>
+(() => {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- map ---------- */
+const map = L.map('map', {preferCanvas: true, zoomControl: false}).setView([9.08, 8.67], 6);
+L.control.zoom({position: 'bottomright'}).addTo(map);
+L.control.scale({imperial: false, position: 'bottomleft'}).addTo(map);
+const bases = {
+  osm: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {maxZoom: 19, zIndex: 0, attribution: 'Tiles &copy; Esri, HERE, Garmin, OpenStreetMap contributors'}),
+  sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom: 19, zIndex: 0, attribution: 'Tiles &copy; Esri, Maxar, Earthstar Geographics'})
+};
+let currentBase = 'osm';
+bases.osm.addTo(map);
+$('#bases').addEventListener('click', e => {
+  const b = e.target.closest('button[data-base]');
+  if (!b || b.dataset.base === currentBase) return;
+  map.removeLayer(bases[currentBase]);
+  currentBase = b.dataset.base;
+  bases[currentBase].addTo(map);
+  document.querySelectorAll('#bases button').forEach(x => x.classList.toggle('on', x === b));
+});
+map.on('mousemove', e => { $('#coords').textContent = e.latlng.lat.toFixed(6) + ', ' + e.latlng.lng.toFixed(6); });
+
+/* ---------- toast ---------- */
+let toastTimer;
+function toast(msg, kind = 'info', ms = 5000) {
+  const t = $('#toast');
+  t.textContent = msg; t.className = kind; t.style.display = 'block';
+  clearTimeout(toastTimer);
+  if (ms) toastTimer = setTimeout(() => { t.style.display = 'none'; }, ms);
+}
+
+/* ---------- layer list ---------- */
+const ICON = {
+  eye: '<svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  eyeOff: '<svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A9.7 9.7 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4M6.5 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7a9.6 9.6 0 0 0 4.2-1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>',
+  target: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>',
+  trash: '<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>'
+};
+const layers = [];
+let seq = 0;
+
+function register(item) {
+  item.id = ++seq; item.visible = true;
+  layers.push(item);
+  item.layer.addTo(map);
+  render();
+  zoomTo(item);
+}
+function zoomTo(item) {
+  if (item.bounds && item.bounds.isValid()) map.fitBounds(item.bounds, {padding: [30, 30], maxZoom: 19});
+}
+function render() {
+  const ul = $('#layers');
+  ul.innerHTML = '';
+  $('#empty').hidden = layers.length > 0;
+  $('#fitAll').disabled = !layers.some(l => l.visible && l.bounds && l.bounds.isValid());
+  const st = $('#status'), n = layers.length;
+  st.classList.toggle('live', n > 0);
+  st.querySelector('b').textContent = n ? n + (n === 1 ? ' layer on the map' : ' layers on the map') : 'Waiting for a raster';
+  st.querySelector('span').textContent = n ? layers[n - 1].name : 'Import a georeferenced GeoTIFF';
+  for (const it of [...layers].reverse()) {
+    const li = document.createElement('li');
+    li.className = 'layer' + (it.visible ? '' : ' off');
+    li.dataset.id = it.id;
+    li.innerHTML =
+      '<div class="row"><span class="badge">' + esc(it.kind) + '</span>' +
+      '<span class="name" title="' + esc(it.name) + '">' + esc(it.name) + '</span>' +
+      '<button class="ib" data-act="vis" title="Show / hide">' + (it.visible ? ICON.eye : ICON.eyeOff) + '</button>' +
+      '<button class="ib" data-act="zoom" title="Zoom to layer">' + ICON.target + '</button>' +
+      '<button class="ib del" data-act="del" title="Remove">' + ICON.trash + '</button></div>' +
+      (it.info ? '<p class="meta">' + esc(it.info) + '</p>' : '') +
+      '<input type="range" min="0.05" max="1" step="0.05" value="' + it.opacity + '" aria-label="Opacity">';
+    ul.appendChild(li);
+  }
+}
+const byId = el => layers.find(l => l.id === Number(el.closest('.layer').dataset.id));
+$('#layers').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  const it = byId(btn);
+  if (btn.dataset.act === 'vis') {
+    it.visible = !it.visible;
+    it.visible ? it.layer.addTo(map) : map.removeLayer(it.layer);
+  } else if (btn.dataset.act === 'zoom') {
+    zoomTo(it);
+  } else {
+    map.removeLayer(it.layer);
+    if (it.cleanup) it.cleanup();
+    layers.splice(layers.indexOf(it), 1);
+  }
+  render();
+});
+$('#layers').addEventListener('input', e => {
+  if (e.target.type !== 'range') return;
+  const it = byId(e.target);
+  it.opacity = Number(e.target.value);
+  it.setOpacity(it.opacity);
+});
+$('#fitAll').addEventListener('click', () => {
+  const bs = layers.filter(l => l.visible && l.bounds && l.bounds.isValid()).map(l => l.bounds);
+  if (!bs.length) return;
+  const all = bs.reduce((a, b) => a.extend(b), L.latLngBounds(bs[0].getSouthWest(), bs[0].getNorthEast()));
+  map.fitBounds(all, {padding: [30, 30]});
+});
+
+/* ---------- helpers ---------- */
+const splitName = n => {
+  const i = n.lastIndexOf('.');
+  return {base: (i < 0 ? n : n.slice(0, i)).toLowerCase(), ext: (i < 0 ? '' : n.slice(i + 1)).toLowerCase()};
+};
+const IMG_EXT = new Set(['png', 'jpg', 'jpeg', 'gif', 'bmp']);
+const WORLD_EXT = new Set(['pgw', 'pngw', 'jgw', 'jpgw', 'jpegw', 'gfw', 'gifw', 'bpw', 'bmpw', 'wld']);
+
+/* ---------- GeoTIFF ---------- */
+async function addGeoTiff(file) {
+  toast('Reading ' + file.name + '...', 'info', 0);
+  const georaster = await parseGeoraster(await file.arrayBuffer());
+  if (!georaster.projection) throw new Error('no georeferencing found in this GeoTIFF.');
+  const layer = new GeoRasterLayer({georaster, opacity: 0.85, resolution: 256});
+  register({
+    name: file.name, kind: 'TIF', layer, opacity: 0.85,
+    bounds: layer.getBounds(),
+    info: georaster.width + ' x ' + georaster.height + ' px, EPSG:' + georaster.projection,
+    setOpacity: v => layer.setOpacity(v)
+  });
+}
+
+/* ---------- image + world file ---------- */
+function parseWorld(text) {
+  const n = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean).slice(0, 6).map(Number);
+  if (n.length < 6 || n.some(v => !Number.isFinite(v))) throw new Error('the world file must contain six numbers.');
+  const [A, D, B, E, C, F] = n;
+  if (A * E - B * D === 0) throw new Error('the world file is degenerate.');
+  return {A, D, B, E, C, F};
+}
+async function addImage(file, all) {
+  const me = splitName(file.name);
+  const wf = all.find(f => { const s = splitName(f.name); return s.base === me.base && WORLD_EXT.has(s.ext); });
+  if (!wf) throw new Error('no matching world file. Select the image and its world file (e.g. .pgw, .jgw, .wld) together.');
+  toast('Placing ' + file.name + '...', 'info', 0);
+  const w = parseWorld(await wf.text());
+
+  const url = URL.createObjectURL(file);
+  const img = await new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = () => rej(new Error('the browser could not decode this image.'));
+    i.src = url;
+  });
+  const W = img.naturalWidth, H = img.naturalHeight;
+  // World files refer to the centre of the top-left pixel; shift to its corner.
+  const x0 = w.C - (w.A + w.B) / 2, y0 = w.F - (w.D + w.E) / 2;
+  const px = (c, r) => [w.A * c + w.B * r + x0, w.D * c + w.E * r + y0];
+  const pts = [px(0, 0), px(W, 0), px(0, H), px(W, H)];
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  if (minX < -180 || maxX > 180 || minY < -90 || maxY > 90) {
+    URL.revokeObjectURL(url);
+    throw new Error('the world file coordinates are not WGS 84 degrees.');
+  }
+  const bounds = L.latLngBounds([minY, minX], [maxY, maxX]);
+
+  let src = url, cleanup = () => URL.revokeObjectURL(url);
+  const northUp = w.B === 0 && w.D === 0 && w.A > 0 && w.E < 0;
+  if (!northUp) {            // rotated or flipped: resample onto an axis-aligned canvas
+    const k = Math.min(1, 4096 / Math.max(W, H));
+    const cv = document.createElement('canvas');
+    cv.width = Math.max(1, Math.round(W * k)); cv.height = Math.max(1, Math.round(H * k));
+    const sx = cv.width / (maxX - minX), sy = cv.height / (maxY - minY);
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(w.A * sx, -w.D * sy, w.B * sx, -w.E * sy, (x0 - minX) * sx, (maxY - y0) * sy);
+    ctx.drawImage(img, 0, 0);
+    src = cv.toDataURL('image/png');
+    URL.revokeObjectURL(url);
+    cleanup = null;
+  }
+  const layer = L.imageOverlay(src, bounds, {opacity: 0.85, interactive: false});
+  register({
+    name: file.name, kind: me.ext.toUpperCase(), layer, opacity: 0.85, bounds,
+    info: W + ' x ' + H + ' px, world file: ' + wf.name + (northUp ? '' : ' (rotated)'),
+    cleanup, setOpacity: v => layer.setOpacity(v)
+  });
+}
+
+/* ---------- DXF ---------- */
+const layerColor = name => {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360;
+  return 'hsl(' + h + ',62%,38%)';
+};
+async function addDxf(file) {
+  const crs = $('#crs').value === 'custom' ? $('#crsCustom').value.trim() : $('#crs').value;
+  if (!crs) throw new Error('enter an EPSG code or proj4 string for the DXF coordinate system.');
+  toast('Converting ' + file.name + '...', 'info', 0);
+  await new Promise(r => setTimeout(r, 30));   // let the message paint before the heavy work
+  const text = await file.text();
+  if (/^AutoCAD Binary DXF/.test(text)) throw new Error('binary DXF is not supported. Save the drawing as an ASCII DXF and try again.');
+  const data = convertDxfText(text, crs);
+
+  const textCount = data.features.filter(f => f.properties && f.properties.text).length;
+  const useLabels = textCount <= 3000;
+  const layer = L.geoJSON(data, {
+    style: f => {
+      const c = layerColor(f.properties.layer);
+      return {color: c, weight: 1.5, opacity: 0.9, fillColor: c, fillOpacity: 0.15};
+    },
+    pointToLayer: (f, ll) => {
+      const c = layerColor(f.properties.layer), t = f.properties.text;
+      if (t && useLabels) {
+        return L.marker(ll, {icon: L.divIcon({className: 'dxf-text', html: esc(t), iconSize: null})});
+      }
+      return L.circleMarker(ll, {radius: 3, color: c, weight: 1, fillColor: c, fillOpacity: 0.8});
+    },
+    onEachFeature: (f, l) => {
+      const p = f.properties;
+      l.bindPopup('<b>' + esc(p.layer) + '</b><br>' + esc(p.entity_type) + (p.text ? '<br>' + esc(p.text) : ''));
+    }
+  });
+  const skipped = data.skipped
+    ? ', ' + data.skipped + ' skipped (' + Object.entries(data.skipped_by_type).slice(0, 4).map(([k, v]) => k + ' ' + v).join(', ') + ')'
+    : '';
+  register({
+    name: file.name, kind: 'DXF', layer, opacity: 0.9, bounds: layer.getBounds(),
+    info: data.features.length.toLocaleString('en-US') + ' features' + skipped,
+    setOpacity: v => layer.setStyle({opacity: v, fillOpacity: v * 0.17})
+  });
+}
+
+/* ---------- file handling ---------- */
+async function handleFiles(fileList) {
+  const all = [...fileList];
+  const imageBases = new Set(all.filter(f => IMG_EXT.has(splitName(f.name).ext)).map(f => splitName(f.name).base));
+  let ok = 0;
+  for (const f of all) {
+    const {base, ext} = splitName(f.name);
+    try {
+      if (ext === 'tif' || ext === 'tiff') await addGeoTiff(f);
+      else if (ext === 'dxf') await addDxf(f);
+      else if (IMG_EXT.has(ext)) await addImage(f, all);
+      else if (WORLD_EXT.has(ext)) { if (!imageBases.has(base)) throw new Error('select the matching image together with this world file.'); continue; }
+      else if (ext === 'pdf') throw new Error('GeoPDF import is not supported. Convert it to GeoTIFF with georeferencing preserved.');
+      else throw new Error('unsupported file type.');
+      ok++;
+    } catch (err) {
+      console.error(err);
+      toast(f.name + ': ' + err.message, 'error', 9000);
+    }
+  }
+  if (ok) toast(ok === 1 ? 'Layer added.' : ok + ' layers added.', 'ok', 2500);
+}
+$('#file').addEventListener('change', e => { handleFiles(e.target.files); e.target.value = ''; });
+const crsTag = () => { const v = $('#crs').value; $('#crsTag').textContent = 'DXF \u00b7 ' + (v === 'custom' ? 'custom CRS' : 'EPSG:' + v); };
+$('#crs').addEventListener('change', e => { $('#crsCustom').hidden = e.target.value !== 'custom'; crsTag(); });
+crsTag();
+$('#sideToggle').addEventListener('click', e => {
+  const c = $('#app').classList.toggle('collapsed');
+  e.currentTarget.setAttribute('aria-expanded', String(!c));
+  setTimeout(() => map.invalidateSize(), 280);
+});
+['dragenter', 'dragover'].forEach(t => window.addEventListener(t, e => { e.preventDefault(); document.body.classList.add('dragging'); }));
+['dragleave', 'drop'].forEach(t => window.addEventListener(t, e => { e.preventDefault(); if (t === 'drop' || !e.relatedTarget) document.body.classList.remove('dragging'); }));
+window.addEventListener('drop', e => { if (e.dataTransfer && e.dataTransfer.files.length) handleFiles(e.dataTransfer.files); });
+})();
+</script>
+</body>
 </html>
-npm install
-npm run dev
