@@ -1043,27 +1043,21 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>'
 const map = L.map('map', {preferCanvas: true, zoomControl: false}).setView([9.08, 8.67], 6);
 L.control.zoom({position: 'bottomright'}).addTo(map);
 L.control.scale({imperial: false, position: 'bottomleft'}).addTo(map);
+const MAPBOX_TOKEN = 'pk.eyJ1Ijoic2VndW5lenJhIiwiYSI6ImNtdzU2N3BlczA0NzkyeHF3dnBheWJ2M2IifQ.l_CxepU3TUVVDCDNuGok0Q';
+
 const bases = {
   osm: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
     maxZoom: 22,
     maxNativeZoom: 19,
-    zIndex: 0,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    attribution: '&copy; CARTO'
   }),
-  sat: L.layerGroup([
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 22,
-      maxNativeZoom: 19,
-      zIndex: 0,
-      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, swisstopo, and the GIS User Community'
-    }),
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 22,
-      maxNativeZoom: 19,
-      zIndex: 1,
-      pane: 'shadowPane' // ensures labels sit cleanly on top of imagery
-    })
-  ])
+  sat: L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/512/{z}/{x}/{y}@2x?access_token=${MAPBOX_TOKEN}`, {
+    tileSize: 512,
+    zoomOffset: -1,
+    maxZoom: 22,
+    maxNativeZoom: 20,
+    attribution: '&copy; Mapbox &copy; OpenStreetMap'
+  })
 };
 let currentBase = 'osm';
 bases.osm.addTo(map);
