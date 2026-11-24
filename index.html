@@ -1145,7 +1145,7 @@ $('#layers').addEventListener('input', e => {
   it.opacity = Number(e.target.value);
   it.setOpacity(it.opacity);
 });
-$('#fitAll').addEventListener('click', () => {
+$('#fitAll')?.addEventListener('click', () => {
   const bs = layers.filter(l => l.visible && l.bounds && l.bounds.isValid()).map(l => l.bounds);
   if (!bs.length) return;
   const all = bs.reduce((a, b) => a.extend(b), L.latLngBounds(bs[0].getSouthWest(), bs[0].getNorthEast()));
