@@ -1058,7 +1058,7 @@ const bases = {
 };
 let currentBase = 'osm';
 bases.osm.addTo(map);
-$('#bases').addEventListener('click', e => {
+$('#bases')?.addEventListener('click', e => {
   const b = e.target.closest('button[data-base]');
   if (!b || b.dataset.base === currentBase) return;
   map.removeLayer(bases[currentBase]);
@@ -1123,7 +1123,7 @@ function render() {
   }
 }
 const byId = el => layers.find(l => l.id === Number(el.closest('.layer').dataset.id));
-$('#layers').addEventListener('click', e => {
+$('#layers')?.addEventListener('click', e => {
   const btn = e.target.closest('button[data-act]');
   if (!btn) return;
   const it = byId(btn);
@@ -1139,7 +1139,7 @@ $('#layers').addEventListener('click', e => {
   }
   render();
 });
-$('#layers').addEventListener('input', e => {
+$('#layers')?.addEventListener('input', e => {
   if (e.target.type !== 'range') return;
   const it = byId(e.target);
   it.opacity = Number(e.target.value);
@@ -1315,7 +1315,7 @@ function downloadFile(content, filename, mimeType) {
   URL.revokeObjectURL(url);
 }
 
-$('#exportKml').addEventListener('click', () => {
+$('#exportKml')?.addEventListener('click', () => {
   const dxfLayer = layers.find(l => l.kind === 'DXF');
   if (!dxfLayer || !dxfLayer.geojsonData) {
     toast('No vector DXF layer available to export.', 'error');
@@ -1349,11 +1349,11 @@ async function handleFiles(fileList) {
   }
   if (ok) toast(ok === 1 ? 'Layer added.' : ok + ' layers added.', 'ok', 2500);
 }
-$('#file').addEventListener('change', e => { handleFiles(e.target.files); e.target.value = ''; });
+$('#file')?.addEventListener('change', e => { handleFiles(e.target.files); e.target.value = ''; });
 const crsTag = () => { const v = $('#crs').value; $('#crsTag').textContent = 'DXF \u00b7 ' + (v === 'custom' ? 'custom CRS' : 'EPSG:' + v); };
-$('#crs').addEventListener('change', e => { $('#crsCustom').hidden = e.target.value !== 'custom'; crsTag(); });
+$('#crs')?.addEventListener('change', e => { $('#crsCustom').hidden = e.target.value !== 'custom'; crsTag(); });
 crsTag();
-$('#sideToggle').addEventListener('click', e => {
+$('#sideToggle')?.addEventListener('click', e => {
   const c = $('#app').classList.toggle('collapsed');
   e.currentTarget.setAttribute('aria-expanded', String(!c));
   setTimeout(() => map.invalidateSize(), 280);
